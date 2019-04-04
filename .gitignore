@@ -1,0 +1,12 @@
+node_modules
+bower_components
+typings
+/source/server/logs
+/source/other/firmensms/.git
+/source/other/firmensms/.gitignore
+/source/other/firmensms/node_modules
+private
+.vscode
+dist
+dec112-api.zip
+

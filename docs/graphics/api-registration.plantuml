@@ -1,0 +1,87 @@
+@startuml
+actor User
+participant API as "API service"
+database DB as "postgres DB"
+actor VRY as "Verifier"
+
+User -> User: app started
+
+User -> User : Create unique DeviceID\nafter APP install
+
+User -> API : check(DeviceID)
+
+API -> DB : get state for DeviceID
+
+alt state == registered
+
+DB -> API : state 10 for device found
+
+API -> User : state=10\n(optional re-check intervall)
+
+User -> User : Continue starting app
+|||
+else state == unregistered
+
+DB -> API : no state for device found\nor state==0
+
+API -> User : state=0
+
+User -> User : Request personal data from user\n(Name, Address, Phone)
+
+User -> API : register (DeviceID, Name,\n\tAddress, Phone)
+
+API -> API : Validate registration request
+
+API -> DB : insert device, user data & code
+
+alt state == userVerificationPending - optional
+API -> DB : setState(1)
+API -> User : state=1
+API --> VRY : Optional verification hook
+VRY --> API : Verification response
+|||
+end
+
+API -> DB : setState(2)
+
+API -> API : Create phone verification code
+
+API --> User : Phone verification request via SMS code
+|||
+else state == phoneVerificationPending
+
+API --> User : state=2
+
+User --> User : Wait for verification SMS Code
+
+User -> User : User enters verification Code in app
+
+User -> API : verify(DeviceID, Code)
+
+API -> DB : getCode(DeviceID)
+DB -> API : Code for DeviceID
+API -> API : check code
+
+alt verification Code OK
+API -> DB : setState(10)
+API -> User : state=10
+User -> User : set app as registered\nperform check once a month
+User -> User : Continue starting app
+|||
+else Code not OK
+API -> DB : setState(0)
+API -> User : state=0, error
+|||
+end
+|||
+end
+
+legend left
+States
+0: Device not registered
+1: User verification pending
+2: Phone verification pending
+10: Device registered
+endlegend
+
+@enduml
